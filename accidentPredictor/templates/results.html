@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ROADRISK - Výsledky predikce</title>
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"/>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+          rel="stylesheet">
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2ecc71;
+            --danger-color: #e74c3c;
+            --warning-color: #f39c12;
+            --dark-color: #34495e;
+            --light-color: #ecf0f1;
+            --gray-color: #95a5a6;
+        }
+
+        body {
+            padding: 0;
+            margin: 0;
+            background-color: #f8f9fa;
+            font-family: 'Poppins', sans-serif;
+            color: #333;
+        }
+
+        .navbar {
+            background-color: white;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .navbar-brand {
+            font-weight: 700;
+            font-size: 1.5rem;
+            color: var(--primary-color);
+        }
+
+        #map {
+            width: 100%;
+            height: 300px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .section-card {
+            background-color: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            padding: 25px;
+            margin-bottom: 25px;
+            transition: all 0.3s ease;
+            transform: translateY(20px);
+            opacity: 0;
+            animation: fadeIn 0.5s forwards;
+        }
+
+        @keyframes fadeIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .weather-icon {
+            font-size: 3.5rem;
+            margin-right: 15px;
+            color: var(--primary-color);
+        }
+
+        .temp-value {
+            font-size: 2.5rem;
+            font-weight: 600;
+            color: var(--dark-color);
+        }
+
+        .weather-details {
+            font-size: 1rem;
+            color: #666;
+        }
+
+        .weather-condition {
+            font-size: 1.2rem;
+            font-weight: 500;
+            color: var(--dark-color);
+            margin-bottom: 5px;
+        }
+
+        .risk-gauge-container {
+            width: 100%;
+            max-width: 250px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .risk-gauge {
+            width: 100%;
+            height: auto;
+        }
+
+        .risk-needle {
+            position: absolute;
+            width: 50%;
+            height: 4px;
+            background-color: #333;
+            top: 50%;
+            left: 25%;
+            transform-origin: right center;
+            transform: rotate(0deg);
+            transition: transform 2s cubic-bezier(0.34, 1.56, 0.64, 1);
+            border-radius: 2px;
+            z-index: 2;
+        }
+
+        .risk-value {
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--dark-color);
+        }
+
+        .risk-category {
+            text-align: center;
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin-top: 15px;
+        }
+
+        .risk-badge {
+            font-size: 1.2em;
+            padding: 8px 15px;
+            margin-bottom: 15px;
+            border-radius: 30px;
+        }
+
+        .progress {
+            height: 30px;
+            margin-bottom: 20px;
+            border-radius: 15px;
+            background-color: #f0f0f0;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            transition: width 1.5s ease;
+        }
+
+        .factor-label {
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: var(--dark-color);
+        }
+
+        .safety-tips {
+            background-color: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 20px;
+            border-left: 5px solid var(--secondary-color);
+        }
+
+        .safety-tips h3 {
+            color: var(--secondary-color);
+        }
+
+        .safety-tips ul {
+            padding-left: 25px;
+        }
+
+        .safety-tips li {
+            margin-bottom: 12px;
+            position: relative;
+        }
+
+        .location-marker {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .location-details {
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+        }
+
+        .marker-icon {
+            font-size: 1.5rem;
+            color: var(--primary-color);
+            margin-right: 15px;
+        }
+
+        .date-icon {
+            font-size: 1.5rem;
+            color: var(--primary-color);
+            margin-right: 15px;
+        }
+
+        .btn-action {
+            margin-top: 5px;
+            margin-bottom: 5px;
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-action:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .weather-card {
+            border-radius: 15px;
+            overflow: hidden;
+            border: none;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .weather-header {
+            background: linear-gradient(135deg, var(--primary-color), #2980b9);
+            color: white;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .weather-body {
+            padding: 25px;
+        }
+
+        .header-box {
+            background: linear-gradient(135deg, var(--primary-color), #2980b9);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            color: white;
+            text-align: center;
+        }
+
+        .header-title {
+            font-weight: 700;
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .header-subtitle {
+            font-weight: 300;
+            opacity: 0.9;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 250px;
+            margin-top: 20px;
+        }
+
+        /* Specific weather background colors */
+        .weather-clear {
+            background: linear-gradient(135deg, #4da0ff, #0062cc);
+        }
+
+        .weather-cloudy {
+            background: linear-gradient(135deg, #a1a1a1, #616161);
+        }
+
+        .weather-rain {
+            background: linear-gradient(135deg, #4a6fa5, #334e68);
+        }
+
+        .weather-heavy-rain {
+            background: linear-gradient(135deg, #425c7a, #263342);
+        }
+
+        .weather-snow {
+            background: linear-gradient(135deg, #94b5da, #647d94);
+        }
+
+        .weather-fog {
+            background: linear-gradient(135deg, #b7b9bb, #7d7e7f);
+        }
+
+        /* Animation classes */
+        .animate-in {
+            animation: fadeIn 0.6s forwards;
+        }
+
+        .delay-1 {
+            animation-delay: 0.2s;
+        }
+
+        .delay-2 {
+            animation-delay: 0.4s;
+        }
+
+        .delay-3 {
+            animation-delay: 0.6s;
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .footer {
+            background-color: var(--dark-color);
+            color: white;
+            padding: 40px 0;
+            margin-top: 60px;
+        }
+
+        .footer-title {
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        .footer-links {
+            list-style: none;
+            padding: 0;
+        }
+
+        .footer-links li {
+            margin-bottom: 10px;
+        }
+
+        .footer-links a {
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .footer-links a:hover {
+            color: white;
+        }
+
+        .social-icons {
+            font-size: 1.5rem;
+        }
+
+        .social-icons a {
+            color: rgba(255, 255, 255, 0.7);
+            margin-right: 15px;
+            transition: color 0.3s ease;
+        }
+
+        .social-icons a:hover {
+            color: white;
+        }
+
+        /* Media queries */
+        @media (max-width: 768px) {
+            .temp-value {
+                font-size: 2rem;
+            }
+
+            .weather-icon {
+                font-size: 2.5rem;
+            }
+
+            .risk-gauge-container {
+                max-width: 200px;
+            }
+
+            .risk-value {
+                font-size: 1.5rem;
+            }
+
+            .header-title {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg navbar-light">
+    <div class="container">
+        <a class="navbar-brand" href="/">ROAD<span style="color: var(--danger-color);">RISK</span></a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="/">Nová analýza</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container mt-4">
+    <div class="header-box">
+        <h1 class="header-title">Analýza rizika dopravní nehody</h1>
+        <p class="header-subtitle">Podrobná predikce na základě historických dat, počasí a lokality</p>
+    </div>
+
+    <div class="section-card">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="location-marker">
+                    <i class="fas fa-map-marker-alt marker-icon"></i>
+                    <div>
+                        <h5 class="mb-0">Vybrané místo</h5>
+                        <p class="text-muted mb-0" id="locationCoords">GPS: {{ lat }}, {{ lng }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="location-marker">
+                    <i class="far fa-calendar-alt date-icon"></i>
+                    <div>
+                        <h5 class="mb-0">Vybrané datum</h5>
+                        <p class="text-muted mb-0" id="selectedDate">{{ date }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="map"></div>
+
+        <div class="text-center">
+            <a href="/" class="btn btn-primary btn-action">
+                <i class="fas fa-search me-2"></i>Nová analýza
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-5">
+            <div class="section-card delay-1">
+                <div class="weather-card">
+                    <div class="weather-header
+                            {% if weather.condition == 'clear' %}weather-clear
+                            {% elif weather.condition == 'light_rain' %}weather-rain
+                            {% elif weather.condition == 'heavy_rain' %}weather-heavy-rain
+                            {% elif weather.condition == 'snow' %}weather-snow
+                            {% elif weather.condition == 'fog' %}weather-fog
+                            {% else %}weather-cloudy{% endif %}">
+                        <h4>Předpověď počasí</h4>
+                        <p class="mb-0">{{ date }}</p>
+                    </div>
+                    <div class="weather-body">
+                        <div class="d-flex align-items-center justify-content-center mb-4">
+                            <div class="weather-icon">
+                                {% if weather.condition == 'clear' %}
+                                <i class="fas fa-sun"></i>
+                                {% elif weather.condition == 'light_rain' %}
+                                <i class="fas fa-cloud-rain"></i>
+                                {% elif weather.condition == 'heavy_rain' %}
+                                <i class="fas fa-cloud-showers-heavy"></i>
+                                {% elif weather.condition == 'snow' %}
+                                <i class="fas fa-snowflake"></i>
+                                {% elif weather.condition == 'fog' %}
+                                <i class="fas fa-smog"></i>
+                                {% elif weather.condition == 'windy' %}
+                                <i class="fas fa-wind"></i>
+                                {% else %}
+                                <i class="fas fa-cloud"></i>
+                                {% endif %}
+                            </div>
+                            <div>
+                                <div class="weather-condition">
+                                    {% if weather.condition == 'clear' %}
+                                    Jasno
+                                    {% elif weather.condition == 'light_rain' %}
+                                    Mírný déšť
+                                    {% elif weather.condition == 'heavy_rain' %}
+                                    Silný déšť
+                                    {% elif weather.condition == 'snow' %}
+                                    Sněžení
+                                    {% elif weather.condition == 'fog' %}
+                                    Mlha
+                                    {% elif weather.condition == 'windy' %}
+                                    Větrno
+                                    {% else %}
+                                    Oblačno
+                                    {% endif %}
+                                </div>
+                                <div class="temp-value">{{ weather.temp_avg }}°C</div>
+                            </div>
+                        </div>
+
+                        <div class="weather-details">
+                            <div class="row mb-3">
+                                <div class="col-6">
+                                    <i class="fas fa-temperature-high"></i> Max: <span id="tempMax">{{ weather.temp_max }}°C</span>
+                                </div>
+                                <div class="col-6">
+                                    <i class="fas fa-temperature-low"></i> Min: <span id="tempMin">{{ weather.temp_min }}°C</span>
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-6">
+                                    <i class="fas fa-wind"></i> Vítr: <span
+                                        id="windSpeed">{{ weather.wind_speed }} m/s</span>
+                                </div>
+                                <div class="col-6">
+                                    <i class="fas fa-tint"></i> Vlhkost: <span
+                                        id="humidity">{{ weather.humidity }}%</span>
+                                </div>
+                            </div>
+                            <div class="mb-2">
+                                <i class="fas fa-cloud-rain"></i> Srážky: <span id="precipitation">{{ weather.precipitation }} mm</span>
+                            </div>
+
+                            {% if weather.source == 'openweathermap' %}
+                            <div class="mt-3">
+                                <small class="text-muted">Zdroj dat: OpenWeatherMap API</small>
+                            </div>
+                            {% elif weather.source == 'model' %}
+                            <div class="mt-3">
+                                <small class="text-muted">Zdroj dat: Predikční model založený na historických
+                                    datech</small>
+                            </div>
+                            {% elif weather.source == 'historical' %}
+                            <div class="mt-3">
+                                <small class="text-muted">Zdroj dat: Historické záznamy počasí</small>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chart-container mt-4">
+                    <canvas id="factorChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-7">
+            <div class="section-card delay-2">
+                <h3 class="text-center mb-4">Riziko nehody</h3>
+
+                <div class="text-center mb-3">
+                        <span id="riskBadge" class="badge risk-badge
+                            {% if risk.risk_category == 'Vysoké' %}
+                                bg-danger
+                            {% elif risk.risk_category == 'Střední' %}
+                                bg-warning text-dark
+                            {% else %}
+                                bg-success
+                            {% endif %}">
+                            {{ risk.risk_category }} riziko
+                        </span>
+                </div>
+
+                <div class="risk-gauge-container mb-4">
+                    <img src="/static/gauge.png" alt="Risk Gauge" class="risk-gauge" id="riskGauge">
+                    <div class="risk-needle" id="riskNeedle"></div>
+                    <div class="risk-value pulse" id="riskValue">{{ risk.risk_score }}%</div>
+                </div>
+
+                <div class="factor-bars mt-5">
+                    <div class="factor-label">Riziko lokality</div>
+                    <div class="progress">
+                        <div id="locationFactor" class="progress-bar bg-danger" role="progressbar"
+                             aria-valuenow="{{ risk.detailed_factors.location_risk }}"
+                             aria-valuemin="0"
+                             aria-valuemax="50"
+                             style="width: 0%">
+                            {{ risk.detailed_factors.location_risk }}
+                        </div>
+                    </div>
+
+                    <div class="factor-label">Časové riziko</div>
+                    <div class="progress">
+                        <div id="timeFactor" class="progress-bar bg-warning" role="progressbar"
+                             aria-valuenow="{{ risk.detailed_factors.time_risk }}"
+                             aria-valuemin="0"
+                             aria-valuemax="15"
+                             style="width: 0%">
+                            {{ risk.detailed_factors.time_risk }}
+                        </div>
+                    </div>
+
+                    <div class="factor-label">Riziko počasí</div>
+                    <div class="progress">
+                        <div id="weatherFactor" class="progress-bar bg-info" role="progressbar"
+                             aria-valuenow="{{ risk.detailed_factors.weather_risk }}"
+                             aria-valuemin="0"
+                             aria-valuemax="35"
+                             style="width: 0%">
+                            {{ risk.detailed_factors.weather_risk }}
+                        </div>
+                    </div>
+
+                    {% if risk.detailed_factors.model_prediction is not none %}
+                    <div class="factor-label">Predikce modelu</div>
+                    <div class="progress">
+                        <div id="modelFactor" class="progress-bar bg-primary" role="progressbar"
+                             aria-valuenow="{{ risk.detailed_factors.model_prediction }}"
+                             aria-valuemin="0"
+                             aria-valuemax="100"
+                             style="width: 0%">
+                            {{ risk.detailed_factors.model_prediction }}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="safety-tips mt-4">
+                    <h3><i class="fas fa-shield-alt"></i> Bezpečnostní doporučení</h3>
+                    <ul id="safetyTips" class="mb-0 mt-3">
+                        {% for tip in risk.safety_tips %}
+                        <li class="mb-2">{{ tip }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+
+            <div class="section-card delay-3">
+                <h3 class="mb-3">Podrobnosti analýzy</h3>
+
+                <p>Tato analýza kombinuje několik zdrojů dat pro vytvoření přesné predikce rizika dopravní nehody na
+                    vybraném místě a v daném čase:</p>
+
+                <ul class="mt-3">
+                    <li><strong>Historická data nehod</strong> – analýza minulých nehod v dané oblasti a identifikace
+                        rizikových faktorů
+                    </li>
+                    <li><strong>Předpověď počasí</strong> – aktuální nebo predikované povětrnostní podmínky a jejich
+                        vliv na bezpečnost provozu
+                    </li>
+                    <li><strong>Sezónní faktory</strong> – zohlednění měsíce v roce a dne v týdnu, které mají významný
+                        vliv na riziko nehod
+                    </li>
+                    <li><strong>Strojové učení</strong> – využití pokročilých algoritmů pro přesnou predikci na základě
+                        kombinace všech faktorů
+                    </li>
+                </ul>
+
+                <div class="mt-4 text-center">
+                    <a href="/" class="btn btn-secondary btn-action">
+                        <i class="fas fa-arrow-left me-2"></i>Zpět na mapu
+                    </a>
+                    <button class="btn btn-primary btn-action ms-2" onclick="window.print()">
+                        <i class="fas fa-print me-2"></i>Vytisknout výsledky
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Footer -->
+<footer class="footer">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-4 mb-4 mb-md-0">
+                <h5 class="footer-title">ROADRISK</h5>
+                <p>Aplikace pro predikci rizika dopravních nehod založená na historických datech a předpovědi
+                    počasí.</p>
+                <div class="social-icons mt-3">
+                    <a href="#"><i class="fab fa-facebook"></i></a>
+                    <a href="#"><i class="fab fa-twitter"></i></a>
+                    <a href="#"><i class="fab fa-linkedin"></i></a>
+                    <a href="#"><i class="fab fa-github"></i></a>
+                </div>
+            </div>
+
+            <div class="col-md-3 mb-4 mb-md-0">
+                <h5 class="footer-title">Odkazy</h5>
+                <ul class="footer-links">
+                    <li><a href="/">Hlavní stránka</a></li>
+                    <li><a href="/">Nová analýza</a></li>
+                </ul>
+            </div>
+
+            <div class="col-md-5">
+                <h5 class="footer-title">Kontakt</h5>
+                <p><i class="fas fa-envelope me-2"></i> info@roadrisk.cz</p>
+                <p><i class="fas fa-phone me-2"></i> +420 123 456 789</p>
+                <p><i class="fas fa-map-marker-alt me-2"></i> Brno, Česká republika</p>
+            </div>
+        </div>
+
+        <hr class="my-4" style="border-color: rgba(255,255,255,0.1);">
+
+        <div class="text-center">
+            <p class="mb-0">&copy; 2025 ROADRISK. Všechna práva vyhrazena.</p>
+        </div>
+    </div>
+</footer>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+
+<!-- Bootstrap JS Bundle -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Initialize map
+        const map = L.map('map').setView([{{lat}
+    },
+        {
+            {
+                lng
+            }
+        }
+    ],
+        13
+    )
+        ;
+
+        // Add the base tile layer (OpenStreetMap)
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // Add a marker for the selected location
+        const marker = L.marker([{{lat}
+    },
+        {
+            {
+                lng
+            }
+        }
+    ]).
+        addTo(map);
+        marker.bindPopup('<strong>Vybrané místo</strong>').openPopup();
+
+        // Animate the risk needle
+        setTimeout(() => {
+            const riskScore = {
+            {
+                risk.risk_score
+            }
+        }
+            ;
+            const riskNeedle = document.getElementById('riskNeedle');
+            const rotation = -90 + (riskScore * 1.8); // Convert 0-100 to -90 to 90 degrees
+            riskNeedle.style.transform = `rotate(${rotation}deg)`;
+        }, 500);
+
+        // Animate progress bars
+        setTimeout(() => {
+            const locationFactor = document.getElementById('locationFactor');
+            const locationValue = {
+            {
+                risk.detailed_factors.location_risk
+            }
+        }
+            ;
+            locationFactor.style.width = `${(locationValue / 50) * 100}%`;
+
+            const timeFactor = document.getElementById('timeFactor');
+            const timeValue = {
+            {
+                risk.detailed_factors.time_risk
+            }
+        }
+            ;
+            timeFactor.style.width = `${(timeValue / 15) * 100}%`;
+
+            const weatherFactor = document.getElementById('weatherFactor');
+            const weatherValue = {
+            {
+                risk.detailed_factors.weather_risk
+            }
+        }
+            ;
+            weatherFactor.style.width = `${(weatherValue / 35) * 100}%`;
+
+            {%
+                if risk.detailed_factors.model_prediction is
+                not
+                none %
+            }
+            const modelFactor = document.getElementById('modelFactor');
+            const modelValue = {
+            {
+                risk.detailed_factors.model_prediction
+            }
+        }
+            ;
+            modelFactor.style.width = `${modelValue}%`;
+            {%
+                endif %
+            }
+        }, 800);
+
+        // Get accident hotspots
+        fetch('/api/hotspots')
+                .then(response => response.json())
+                .then(data => {
+                    // Add accident markers
+                    if (data.features && data.features.length > 0) {
+                        data.features.forEach(feature => {
+                            const coords = feature.geometry.coordinates;
+                            const circle = L.circle([coords[1], coords[0]], {
+                                color: 'rgba(231, 76, 60, 0.8)',
+                                fillColor: 'rgba(231, 76, 60, 0.5)',
+                                fillOpacity: 0.5,
+                                radius: 50
+                            }).addTo(map);
+
+                            circle.bindTooltip('Místo nehody', {
+                                className: 'custom-tooltip'
+                            });
+                        });
+                    }
+                })
+                .catch(error => console.error('Error loading hotspots:', error));
+
+        // Create risk factor chart
+        const ctx = document.getElementById('factorChart').getContext('2d');
+        const riskChart = new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: ['Lokalita', 'Počasí', 'Čas', 'Model ML'],
+                datasets: [{
+                    label: 'Riziko (%)',
+                    data: [
+                        {{(risk.detailed_factors.location_risk / 50) * 100
+                }
+            },
+        {
+            {
+                (risk.detailed_factors.weather_risk / 35) * 100
+            }
+        }
+    ,
+        {
+            {
+                (risk.detailed_factors.time_risk / 15) * 100
+            }
+        }
+    ,
+        {%
+            if risk.detailed_factors.model_prediction is
+            not
+            none %
+        }
+        {
+            {
+                risk.detailed_factors.model_prediction
+            }
+        }
+        {% else %
+        }
+        0
+        {%
+            endif %
+        }
+    ],
+        backgroundColor: 'rgba(52, 152, 219, 0.2)',
+                borderColor
+    :
+        'rgba(52, 152, 219, 1)',
+                borderWidth
+    :
+        2,
+                pointBackgroundColor
+    :
+        'rgba(52, 152, 219, 1)',
+                pointBorderColor
+    :
+        '#fff',
+                pointHoverBackgroundColor
+    :
+        '#fff',
+                pointHoverBorderColor
+    :
+        'rgba(52, 152, 219, 1)'
+    }]
+    },
+        options: {
+            responsive: true,
+                    maintainAspectRatio
+        :
+            false,
+                    elements
+        :
+            {
+                line: {
+                    tension: 0.1
+                }
+            }
+        ,
+            scales: {
+                r: {
+                    angleLines: {
+                        display: true
+                    }
+                ,
+                    suggestedMin: 0,
+                            suggestedMax
+                :
+                    100
+                }
+            }
+        }
+    })
+        ;
+    });
+</script>
+</body>
+</html>
