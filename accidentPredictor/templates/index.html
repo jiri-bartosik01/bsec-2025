@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ROAD RISK - Prediktor dopravních rizik</title>
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css"/>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css"/>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+          rel="stylesheet">
+
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2ecc71;
+            --danger-color: #e74c3c;
+            --warning-color: #f39c12;
+            --dark-color: #34495e;
+            --light-color: #ecf0f1;
+            --gray-color: #95a5a6;
+        }
+
+        body {
+            padding: 0;
+            margin: 0;
+            background-color: #f8f9fa;
+            font-family: 'Poppins', sans-serif;
+            color: #333;
+        }
+
+        .navbar {
+            background-color: white;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .navbar-brand {
+            font-weight: 700;
+            font-size: 1.5rem;
+            color: var(--primary-color);
+        }
+
+        #map {
+            width: 100%;
+            height: 75vh;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            z-index: 1;
+        }
+
+        .info-panel {
+            background-color: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            padding: 25px;
+            margin-top: 25px;
+            display: none;
+            transition: all 0.3s ease;
+            transform: translateY(20px);
+            opacity: 0;
+        }
+
+        .info-panel.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s ease;
+            height: 100%;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-header {
+            background-color: white;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            border-radius: 15px 15px 0 0 !important;
+            padding: 20px;
+        }
+
+        .card-title {
+            margin-bottom: 0;
+            font-weight: 600;
+            color: var(--dark-color);
+        }
+
+        .feature-icon {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+            color: var(--primary-color);
+        }
+
+        .intro-section {
+            padding: 80px 0;
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        .intro-title {
+            font-weight: 700;
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+        }
+
+        .intro-subtitle {
+            font-weight: 300;
+            font-size: 1.25rem;
+            margin-bottom: 30px;
+            opacity: 0.9;
+        }
+
+        .location-marker {
+            display: flex;
+            align-items: center;
+        }
+
+        .marker-icon {
+            font-size: 1.5rem;
+            color: var(--primary-color);
+            margin-right: 15px;
+        }
+
+        .custom-tooltip {
+            background-color: white;
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            padding: 12px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            font-weight: 500;
+            padding: 10px 20px;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            background-color: #2980b9;
+            border-color: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .form-control {
+            border-radius: 10px;
+            padding: 12px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .form-label {
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: var(--dark-color);
+        }
+
+        .form-select {
+            border-radius: 10px;
+            padding: 12px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .features-section {
+            padding: 60px 0;
+        }
+
+        .section-title {
+            font-weight: 700;
+            font-size: 2rem;
+            margin-bottom: 40px;
+            text-align: center;
+            color: var(--dark-color);
+        }
+
+        .footer {
+            background-color: var(--dark-color);
+            color: white;
+            padding: 40px 0;
+            margin-top: 60px;
+        }
+
+        .footer-title {
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        .footer-links {
+            list-style: none;
+            padding: 0;
+        }
+
+        .footer-links li {
+            margin-bottom: 10px;
+        }
+
+        .footer-links a {
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .footer-links a:hover {
+            color: white;
+        }
+
+        .social-icons {
+            font-size: 1.5rem;
+        }
+
+        .social-icons a {
+            color: rgba(255, 255, 255, 0.7);
+            margin-right: 15px;
+            transition: color 0.3s ease;
+        }
+
+        .social-icons a:hover {
+            color: white;
+        }
+
+        .heatmap-legend {
+            position: absolute;
+            bottom: 30px;
+            right: 10px;
+            z-index: 1000;
+            background: white;
+            padding: 10px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .legend-gradient {
+            width: 20px;
+            height: 150px;
+            background: linear-gradient(to top,
+            rgba(0, 0, 255, 0.7),
+            rgba(0, 255, 255, 0.7),
+            rgba(0, 255, 0, 0.7),
+            rgba(255, 255, 0, 0.7),
+            rgba(255, 0, 0, 0.7));
+            display: inline-block;
+            margin-right: 10px;
+        }
+
+        .legend-labels {
+            display: inline-block;
+            height: 150px;
+            position: relative;
+        }
+
+        .legend-label {
+            position: absolute;
+            font-size: 12px;
+            left: 5px;
+        }
+
+        .cluster-small {
+            background-color: rgba(52, 152, 219, 0.6);
+        }
+
+        .cluster-medium {
+            background-color: rgba(243, 156, 18, 0.6);
+        }
+
+        .cluster-large {
+            background-color: rgba(231, 76, 60, 0.6);
+        }
+
+        /* Pulse animation for accident hotspots */
+        .accident-marker {
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.7);
+            }
+            70% {
+                transform: scale(1);
+                box-shadow: 0 0 0 10px rgba(231, 76, 60, 0);
+            }
+            100% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(231, 76, 60, 0);
+            }
+        }
+
+        /* Loading overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .loading-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(52, 152, 219, 0.2);
+            border-top: 5px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Media queries */
+        @media (max-width: 768px) {
+            #map {
+                height: 50vh;
+            }
+
+            .intro-section {
+                padding: 50px 0;
+            }
+
+            .intro-title {
+                font-size: 2rem;
+            }
+
+            .section-title {
+                font-size: 1.5rem;
+                margin-bottom: 30px;
+            }
+        }
+    </style>
+</head>
+<body>
+<!-- Loading overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-spinner"></div>
+</div>
+
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg navbar-light">
+    <div class="container">
+        <a class="navbar-brand" href="/">ROAD<span style="color: var(--danger-color);">RISK</span></a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="#map-section">Mapa</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#features">Funkce</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#about">O aplikaci</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<!-- Intro Section -->
+<section class="intro-section">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <h1 class="intro-title">Predikce rizika dopravních nehod</h1>
+                <p class="intro-subtitle">Interaktivní mapa pro analýzu rizika dopravních nehod založená na historických
+                    datech a předpovědi počasí.</p>
+                <a href="#map-section" class="btn btn-light btn-lg">Začít analýzu</a>
+            </div>
+            <div class="col-lg-6 d-none d-lg-block">
+                <img src="https://via.placeholder.com/600x400?text=Road+Safety" alt="Road Safety"
+                     class="img-fluid rounded-3 shadow">
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Main Content -->
+<div class="container" id="map-section">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body p-4">
+                    <h2 class="mb-4">Vyberte místo na mapě</h2>
+                    <p class="text-muted mb-0">Klikněte kamkoliv na mapě pro označení místa. Systém vám pomůže odhadnout
+                        riziko nehody na základě historických dat, aktuálního počasí a času.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div id="map"></div>
+
+            <!-- Heatmap Legend -->
+            <div class="heatmap-legend">
+                <div class="legend-gradient"></div>
+                <div class="legend-labels">
+                    <div class="legend-label" style="top: 0;">Vysoké riziko</div>
+                    <div class="legend-label" style="top: 35px;">Střední-vysoké</div>
+                    <div class="legend-label" style="top: 75px;">Střední</div>
+                    <div class="legend-label" style="top: 115px;">Nízké-střední</div>
+                    <div class="legend-label" style="bottom: 0;">Nízké riziko</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <form action="/predict" method="POST" id="predictionForm" class="info-panel mt-4">
+        <input type="hidden" id="lat" name="lat" value="">
+        <input type="hidden" id="lng" name="lng" value="">
+
+        <div class="row">
+            <div class="col-md-6 mb-4">
+                <div class="location-marker">
+                    <i class="fas fa-map-marker-alt marker-icon"></i>
+                    <div>
+                        <h5 class="mb-0">Vybrané místo</h5>
+                        <p class="text-muted mb-0" id="selectedLocation">GPS: 49.2002, 16.6078</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-4">
+                <div class="date-picker">
+                    <label for="datePicker" class="form-label">Vyberte datum cesty:</label>
+                    <input type="date" class="form-control" id="datePicker" name="date" required>
+                </div>
+            </div>
+        </div>
+        <div class="text-center mt-3">
+            <button type="submit" id="analyzeButton" class="btn btn-primary btn-lg">
+                <i class="fas fa-search-location me-2"></i>Analyzovat riziko
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Features Section -->
+<section class="features-section" id="features">
+    <div class="container">
+        <h2 class="section-title">Klíčové funkce</h2>
+
+        <div class="row">
+            <div class="col-md-4 mb-4">
+                <div class="card h-100">
+                    <div class="card-body text-center p-4">
+                        <i class="fas fa-map-marked-alt feature-icon"></i>
+                        <h5 class="card-title mb-3">Interaktivní mapa</h5>
+                        <p class="card-text">Přehledná vizualizace rizikových míst na základě historických dat
+                            dopravních nehod.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4 mb-4">
+                <div class="card h-100">
+                    <div class="card-body text-center p-4">
+                        <i class="fas fa-cloud-sun-rain feature-icon"></i>
+                        <h5 class="card-title mb-3">Předpověď počasí</h5>
+                        <p class="card-text">Integrace aktuální předpovědi počasí pro přesnější odhad rizika za různých
+                            podmínek.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4 mb-4">
+                <div class="card h-100">
+                    <div class="card-body text-center p-4">
+                        <i class="fas fa-brain feature-icon"></i>
+                        <h5 class="card-title mb-3">Strojové učení</h5>
+                        <p class="card-text">Využití pokročilých algoritmů strojového učení pro přesnou predikci rizika
+                            nehod.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-md-4 mb-4">
+                <div class="card h-100">
+                    <div class="card-body text-center p-4">
+                        <i class="fas fa-chart-line feature-icon"></i>
+                        <h5 class="card-title mb-3">Analýza rizikových faktorů</h5>
+                        <p class="card-text">Podrobný rozbor faktorů přispívajících k riziku nehody na daném místě a v
+                            daném čase.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4 mb-4">
+                <div class="card h-100">
+                    <div class="card-body text-center p-4">
+                        <i class="fas fa-shield-alt feature-icon"></i>
+                        <h5 class="card-title mb-3">Bezpečnostní doporučení</h5>
+                        <p class="card-text">Personalizované tipy pro bezpečnou jízdu na základě specifických rizikových
+                            faktorů.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4 mb-4">
+                <div class="card h-100">
+                    <div class="card-body text-center p-4">
+                        <i class="fas fa-history feature-icon"></i>
+                        <h5 class="card-title mb-3">Historická data</h5>
+                        <p class="card-text">Využití rozsáhlé databáze historických dopravních nehod pro přesnou
+                            predikci rizik.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- About Section -->
+<section class="py-5" id="about">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 mx-auto">
+                <div class="card">
+                    <div class="card-body p-5">
+                        <h2 class="card-title text-center mb-4">O aplikaci</h2>
+                        <p>ROADRISK je moderní webová aplikace vyvinutá pro zvýšení bezpečnosti na českých silnicích.
+                            Využívá historických dat o dopravních nehodách, aktuálních předpovědí počasí a strojového
+                            učení k predikci rizika nehod na konkrétních místech a v konkrétních časech.</p>
+
+                        <p>Cílem této aplikace je:</p>
+                        <ul>
+                            <li>Pomoci řidičům identifikovat potenciálně nebezpečné úseky</li>
+                            <li>Poskytnout včasné a relevantní bezpečnostní informace</li>
+                            <li>Snížit počet dopravních nehod prostřednictvím prevence a zvýšeného povědomí</li>
+                        </ul>
+
+                        <p>Aplikace využívá skutečná data o nehodách, intenzitě dopravy a povětrnostních podmínkách k
+                            vytvoření komplexního modelu rizik. Díky tomu může identifikovat rizikové faktory jako je
+                            počasí, denní doba, sezónní vlivy a historická nehodovost konkrétních lokalit.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Footer -->
+<footer class="footer">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-4 mb-4 mb-md-0">
+                <h5 class="footer-title">ROADRISK</h5>
+                <p>Aplikace pro predikci rizika dopravních nehod založená na historických datech a předpovědi
+                    počasí.</p>
+                <div class="social-icons mt-3">
+                    <a href="#"><i class="fab fa-facebook"></i></a>
+                    <a href="#"><i class="fab fa-twitter"></i></a>
+                    <a href="#"><i class="fab fa-linkedin"></i></a>
+                    <a href="#"><i class="fab fa-github"></i></a>
+                </div>
+            </div>
+
+            <div class="col-md-3 mb-4 mb-md-0">
+                <h5 class="footer-title">Odkazy</h5>
+                <ul class="footer-links">
+                    <li><a href="#map-section">Mapa</a></li>
+                    <li><a href="#features">Funkce</a></li>
+                    <li><a href="#about">O aplikaci</a></li>
+                </ul>
+            </div>
+
+            <div class="col-md-5">
+                <h5 class="footer-title">Kontakt</h5>
+                <p><i class="fas fa-envelope me-2"></i> info@roadrisk.cz</p>
+                <p><i class="fas fa-phone me-2"></i> +420 123 456 789</p>
+                <p><i class="fas fa-map-marker-alt me-2"></i> Brno, Česká republika</p>
+            </div>
+        </div>
+
+        <hr class="my-4" style="border-color: rgba(255,255,255,0.1);">
+
+        <div class="text-center">
+            <p class="mb-0">&copy; 2025 ROADRISK. Všechna práva vyhrazena.</p>
+        </div>
+    </div>
+</footer>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+<script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+
+<!-- Bootstrap JS Bundle -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Initialize loading overlay
+        const loadingOverlay = document.getElementById('loadingOverlay');
+
+        // Initialize map
+        const map = L.map('map').setView([49.1951, 16.6068], 12); // Centered on Brno
+
+        // Add the base tile layer (OpenStreetMap)
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // Variables to store the selected location
+        let selectedMarker = null;
+
+        // Set the default date to today
+        const today = new Date();
+        const dateStr = today.toISOString().split('T')[0];
+        document.getElementById('datePicker').value = dateStr;
+
+        // Show loading overlay
+        function showLoading() {
+            loadingOverlay.classList.add('show');
+        }
+
+        // Hide loading overlay
+        function hideLoading() {
+            loadingOverlay.classList.remove('show');
+        }
+
+        // Initialize marker cluster group
+        const markers = L.markerClusterGroup({
+            maxClusterRadius: 50,
+            iconCreateFunction: function (cluster) {
+                const count = cluster.getChildCount();
+                let sizeClass, colorClass;
+
+                if (count < 10) {
+                    sizeClass = 'marker-cluster-small';
+                    colorClass = 'cluster-small';
+                } else if (count < 30) {
+                    sizeClass = 'marker-cluster-medium';
+                    colorClass = 'cluster-medium';
+                } else {
+                    sizeClass = 'marker-cluster-large';
+                    colorClass = 'cluster-large';
+                }
+
+                return L.divIcon({
+                    html: '<div><span>' + count + '</span></div>',
+                    className: 'marker-cluster ' + sizeClass + ' ' + colorClass,
+                    iconSize: new L.Point(40, 40)
+                });
+            }
+        });
+
+        // Get accident hotspots
+        showLoading();
+        fetch('/api/hotspots')
+                .then(response => response.json())
+                .then(data => {
+                    // Create a visualization for accident hotspots
+                    if (data.features && data.features.length > 0) {
+                        // Prepare heatmap data
+                        const heatmapPoints = [];
+
+                        // Add individual accident markers
+                        data.features.forEach(feature => {
+                            const coords = feature.geometry.coordinates;
+                            const intensity = feature.properties.intensity || 0.5;
+                            const count = feature.properties.count || 1;
+
+                            // Add to heatmap data (with intensity)
+                            heatmapPoints.push([coords[1], coords[0], intensity]);
+
+                            // Create circle marker
+                            const radius = 8 + Math.min(8, count); // Base size plus bonus for accident count
+                            const circle = L.circleMarker([coords[1], coords[0]], {
+                                radius: radius,
+                                fillColor: 'rgba(231, 76, 60, 0.7)',
+                                color: 'white',
+                                weight: 1,
+                                fillOpacity: 0.8
+                            });
+
+                            // Add tooltip
+                            circle.bindTooltip(`Místo s ${count} nehodami`, {
+                                className: 'custom-tooltip'
+                            });
+
+                            // Add to cluster group
+                            markers.addLayer(circle);
+                        });
+
+                        // Add the marker cluster group to the map
+                        map.addLayer(markers);
+
+                        // Create and add heatmap
+                        L.heatLayer(heatmapPoints, {
+                            radius: 25,
+                            blur: 15,
+                            maxZoom: 17,
+                            minOpacity: 0.3,
+                            gradient: {
+                                0.2: 'blue',
+                                0.4: 'cyan',
+                                0.6: 'lime',
+                                0.8: 'yellow',
+                                1.0: 'red'
+                            }
+                        }).addTo(map);
+                    }
+
+                    hideLoading();
+                })
+                .catch(error => {
+                    console.error('Error loading hotspots:', error);
+                    hideLoading();
+                });
+
+        // Handle map click events
+        map.on('click', function (e) {
+            // Remove previous marker if exists
+            if (selectedMarker) {
+                map.removeLayer(selectedMarker);
+            }
+
+            // Add a new marker
+            selectedMarker = L.marker(e.latlng, {
+                icon: L.icon({
+                    iconUrl: 'https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+                    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                    iconSize: [25, 41],
+                    iconAnchor: [12, 41],
+                    popupAnchor: [1, -34],
+                    shadowSize: [41, 41]
+                })
+            }).addTo(map);
+
+            // Popup with animation
+            selectedMarker.bindPopup('<strong>Vybrané místo</strong><br>Klikněte na "Analyzovat riziko"').openPopup();
+
+            // Update the form hidden fields
+            document.getElementById('lat').value = e.latlng.lat;
+            document.getElementById('lng').value = e.latlng.lng;
+
+            // Update the displayed coordinates
+            document.getElementById('selectedLocation').textContent =
+                    `GPS: ${e.latlng.lat.toFixed(6)}, ${e.latlng.lng.toFixed(6)}`;
+
+            // Show the form panel with animation
+            const infoPanel = document.getElementById('predictionForm');
+            infoPanel.style.display = 'block';
+
+            // Trigger reflow
+            void infoPanel.offsetWidth;
+
+            // Add the show class for animation
+            infoPanel.classList.add('show');
+
+            // Scroll to the form
+            infoPanel.scrollIntoView({behavior: 'smooth', block: 'nearest'});
+        });
+
+        // Handle the form submission
+        document.getElementById('predictionForm').addEventListener('submit', function (e) {
+            // Ensure location is selected
+            if (!document.getElementById('lat').value || !document.getElementById('lng').value) {
+                e.preventDefault();
+                alert('Prosím, vyberte místo na mapě kliknutím.');
+                return false;
+            }
+
+            // Show loading
+            showLoading();
+
+            // Disable the button and show loading state
+            const analyzeButton = document.getElementById('analyzeButton');
+            analyzeButton.disabled = true;
+            analyzeButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Analyzuji...';
+
+            // Allow the form to submit
+            return true;
+        });
+
+        // Smooth scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+    });
+</script>
+</body>
+</html>
