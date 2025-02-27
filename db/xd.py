@@ -39,6 +39,6 @@ def remove_fully_null_columns(csv_file: str, output_file: str):
 
 
 # Example usage
-input_csv = "db/_WITH_closest_lines_AS_SELECT_dn_hd_ST_Distance_dn_geometry_hd_g_202502271712.csv"  # Replace with your actual CSV file
-output_csv = "cleaned_data2.csv"  # Output file name
+input_csv = "db/_WITH_closest_lines_AS_select_dn_hd_ST_X_dn_geometry_ST_Y_dn_geo_202502272021.csv"  # Replace with your actual CSV file
+output_csv = "cleaned_data.csv"  # Output file name
 remove_fully_null_columns(input_csv, output_csv)

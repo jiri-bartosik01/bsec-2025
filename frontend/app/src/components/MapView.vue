@@ -6,10 +6,62 @@
 import {onMounted, ref} from "vue";
 import maplibregl from "maplibre-gl";
 
-const emit = defineEmits(['MapClicked']);
+const emit = defineEmits(['MapClicked', 'mapDataLoaded', 'mapDataLoading']);
 const mapContainer = ref(null);
 let map;
 
+const fetchCentroids = async () => {
+    emit('mapDataLoading');
+    const url = 'http://10.147.19.154:8000/points';
+    const response = await fetch(url);
+    const data = await response.json();
+    processPoints(data);
+    emit('mapDataLoaded');
+};
+
+const processPoints = (points) => {
+    const clusters = points.reduce((acc, point) => {
+        if (!acc[point.cluster_id]) {
+            acc[point.cluster_id] = [];
+        }
+        acc[point.cluster_id].push([point.x, point.y]);
+        return acc;
+    }, {});
+
+    Object.values(clusters).forEach(cluster => {
+        const polygon = createPolygon(cluster);
+        addPolygonToMap(polygon);
+    });
+};
+
+const createPolygon = (points) => {
+    // Assuming points are in the correct order to form a polygon
+    return {
+        type: 'Feature',
+        geometry: {
+            type: 'Polygon',
+            coordinates: [points]
+        }
+    };
+};
+
+const addPolygonToMap = (polygon) => {
+    map.addSource(`polygon-${Math.random()}`, {
+        type: 'geojson',
+        data: polygon
+    });
+
+    map.addLayer({
+        id: `polygon-${Math.random()}`,
+        type: 'fill',
+        source: `polygon-${Math.random()}`,
+        layout: {},
+        paint: {
+            'fill-color': '#088',
+            'fill-opacity': 0.8
+        }
+    });
+};
 
 const switchMapSource = (source) => {
     const newSource = source === 'basic' ? 'basic-tiles' : 'aerial-tiles';
@@ -35,9 +87,11 @@ defineExpose({
 });
 
 onMounted(() => {
+    fetchCentroids();
+
     const API_KEY = "D1D_iVhi-pbGrWFW80ijlZmC_HRQzZaUa59gV-7ZaXo";
-     map = new maplibregl.Map({
-        container: mapContainer.value, // Use the ref value here
+    map = new maplibregl.Map({
+        container: mapContainer.value,
         center: [16.608504478, 49.195213619],
         zoom: 15,
         attributionControl: false,
@@ -85,7 +139,6 @@ onMounted(() => {
         emit('MapClicked', e);
     });
 
-    // Request user's current location and center the map
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition((position) => {
             const userLocation = [position.coords.longitude, position.coords.latitude];
