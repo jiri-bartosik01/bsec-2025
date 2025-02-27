@@ -3,3 +3,5 @@ uvicorn[standard]
 python-jose
 toml
 types-toml
+sqlalchemy
+geoalchemy2

@@ -5,7 +5,5 @@
 # ex. from app.sql.schemas import UserItems, User
 
 from .error import *
-from .user.error import *
-from .user.user_create import UserCreate
-from .user.user_response_model import User
-from .user.user_update import UserUpdate
+from .point.point_response_model import Point
+from .centroid.centroid_response_model import Centroid
