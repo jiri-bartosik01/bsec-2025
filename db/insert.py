@@ -7,6 +7,8 @@ from psycopg2.extras import execute_values
 from dotenv import load_dotenv
 from os import getenv
 
+from load_weather import insert_weather_data, read_xlsx
+
 
 load_dotenv()
 
@@ -186,7 +188,7 @@ def insert_data(conn, data):
 
 def insert_dopravni_nehody_data(conn, data):
     """Inserts parsed geojson data into the table."""
-    
+
     # Connect to the PostgreSQL database
     cur = conn.cursor()
     for json_data in data["features"]:
@@ -286,9 +288,11 @@ def main():
         # create_table(conn)
         # data = load_geojson("/home/mkoo7mk/Downloads/Telegram Desktop/intenzita_dopravy_pentlogramy_-2087072355465349330.geojson")
         # insert_data(conn, data)
-        create_dopravni_nehody_table(conn)
-        data = load_json("/home/mkoo7mk/Downloads/Telegram Desktop/dopravni_nehody_4922215206159905331.geojson")
-        insert_dopravni_nehody_data(conn, data)
+        # create_dopravni_nehody_table(conn)
+        # data = load_json("/home/mkoo7mk/Downloads/Telegram Desktop/dopravni_nehody_4922215206159905331.geojson")
+        # insert_dopravni_nehody_data(conn, data)
+        data = read_xlsx("/home/mkoo7mk/Downloads/Telegram Desktop/B2BTUR01.xlsx")
+        insert_weather_data(conn, data)  # type: ignore
     finally:
         conn.close()
 
