@@ -6,6 +6,7 @@ import PlaceView from "./PlaceView.vue";
 const showFilter = ref(false);
 const showPlaceView = ref(false);
 const focusedPlace = ref({"lat": 0, "lng": 0});
+const mapViewRef = ref(null);
 
 const toggleFilterVisibility = () => {
     if (!showPlaceView.value) {
@@ -22,12 +23,20 @@ const handleMapClicked = (event) => {
     focusedPlace.value = event.lngLat;
     showPlaceView.value = true;
 };
+
+const switchToBasicMap = () => {
+    mapViewRef.value.switchMapSource('basic');
+};
+
+const switchToAerialMap = () => {
+    mapViewRef.value.switchMapSource('aerial');
+};
 </script>
 
 <template>
     <div class="relative w-screen h-screen">
         <!-- The Map MUST be before UI elements so it renders below -->
-        <MapView @MapClicked="handleMapClicked"/>
+        <MapView ref="mapViewRef" @MapClicked="handleMapClicked"/>
 
         <!-- Floating Pill Navbar with 90% width -->
         <div
@@ -36,15 +45,10 @@ const handleMapClicked = (event) => {
             <!-- Left Dropdown Button -->
             <div class="dropdown">
                 <div tabindex="0" role="button" class="btn btn-ghost btn-circle" onclick="my_modal_3.showModal()">
-                    <svg width="30px" height="30px" viewBox="0 0 24 24" fill="none"
-                         xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="12" cy="12" r="10" stroke="#1C274C" stroke-width="1.5"></circle>
-                        <path d="M12 17V11" stroke="#1C274C" stroke-width="1.5" stroke-linecap="round"></path>
-                        <circle cx="1" cy="1" r="1" transform="matrix(1 0 0 -1 11 9)" fill="#1C274C"></circle>
-                    </svg>
-                </div>
+                    <svg width="64px" height="64px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round" stroke="#CCCCCC" stroke-width="0.048"></g><g id="SVGRepo_iconCarrier"> <g id="Edit / Layer"> <path id="Vector" d="M21 14L12 20L3 14M21 10L12 16L3 10L12 4L21 10Z" stroke="#000000" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"></path> </g> </g></svg>                </div>
                 <ul tabindex="0" class="menu menu-sm dropdown-content bg-base-100 rounded-box z-[1] mt-3 w-52 p-2 shadow">
-                    <li><a>O projektu</a></li>
+                    <li @click="switchToBasicMap"><a>Základní mapa</a></li>
+                    <li @click="switchToAerialMap"><a>Satelitní mapa</a></li>
                 </ul>
             </div>
 
@@ -67,16 +71,14 @@ const handleMapClicked = (event) => {
             <h2 class="card-title">Filtrovat data</h2>
             <fieldset class="fieldset">
                 <legend class="fieldset-legend">Povětrnostní podmínky</legend>
-                <input type="text" class="input" placeholder="My awesome page"/>
-                <p class="fieldset-label">You can edit page title later on from settings</p>
+                <input type="text" class="input" placeholder=""/>
             </fieldset>
             <fieldset class="fieldset">
                 <legend class="fieldset-legend">Řidič</legend>
-                <input type="text" class="input" placeholder="My awesome page"/>
-                <p class="fieldset-label">You can edit page title later on from settings</p>
+                <input type="text" class="input" placeholder=""/>
             </fieldset>
             <div class="card-actions justify-end">
-                <button class="btn btn-ghost">Zrušit filtr</button>
+                <button class="btn btn-ghost" @click="toggleFilterVisibility">Zrušit filtr</button>
                 <button class="btn btn-primary">Filtrovat</button>
             </div>
         </div>
