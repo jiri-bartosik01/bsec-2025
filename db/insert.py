@@ -1,3 +1,4 @@
+from datetime import datetime
 import json
 import psycopg2
 from shapely.geometry import LineString
@@ -66,11 +67,98 @@ def create_table(conn):
         print("Table created successfully.")
 
 
+def create_dopravni_nehody_table(conn):
+    """Creates a table for storing the geojson nehodove data."""
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS dopravni_nehody (
+                OBJECTID_1 BIGINT PRIMARY KEY,
+                geometry GEOMETRY(Point, 4326),
+                zuj TEXT,
+                alkohol_vinik TEXT,
+                hlavni_pricina TEXT,
+                srazka TEXT,
+                nasledky TEXT,
+                pricina TEXT,
+                stav_vozovky TEXT,
+                povetrnostni_podm TEXT,
+                rozhled TEXT,
+                misto_nehody TEXT,
+                druh_komun TEXT,
+                pneumatiky TEXT,
+                druh_pohonu TEXT,
+                druh_vozidla TEXT,
+                mestska_cast TEXT,
+                pohlavi TEXT,
+                alkohol TEXT,
+                den_v_tydnu TEXT,
+                mesic_t TEXT,
+                katastr TEXT,
+                chovani_chodce TEXT,
+                stav_chodce TEXT,
+                drogy_chodec TEXT,
+                alkohol_chodec TEXT,
+                osobni_prepravnik TEXT,
+                reflexni_prvky TEXT,
+                kategorie_chodce TEXT,
+                nasledek TEXT,
+                ozn_osoba TEXT,
+                zavineni TEXT,
+                viditelnost TEXT,
+                situovani TEXT,
+                osoba TEXT,
+                stav_ridic TEXT,
+                doba TEXT,
+                smrt_po TEXT,
+                lz BIGINT,
+                TARGET_FID_1 BIGINT,
+                Join_Count_1 BIGINT,
+                OBJECTID BIGINT,
+                Join_Count BIGINT,
+                TARGET_FID BIGINT,
+                den BIGINT,
+                vek BIGINT,
+                smrt_dny TEXT,
+                rok_nar BIGINT,
+                p48a BIGINT,
+                p59d BIGINT,
+                rok BIGINT,
+                tz BIGINT,
+                smrt BIGINT,
+                lehce_zran_os BIGINT,
+                tezce_zran_os BIGINT,
+                usmrceno_os BIGINT,
+                id_vozidla BIGINT,
+                hodina BIGINT,
+                ovlivneni_ridice BIGINT,
+                cas BIGINT,
+                mesic BIGINT,
+                e BIGINT,
+                d BIGINT,
+                id_nehody BIGINT,
+                datum TEXT,
+                hmotna_skoda_1 BIGINT,
+                skoda_vozidlo BIGINT,
+                GlobalID TEXT
+            );
+        """
+        )
+        conn.commit()
+
+
 def load_geojson(file_path: str):
     """Loads geojson data from a file."""
     with open(file_path, "r") as file:
         geojson = json.load(file)
     return geojson
+
+
+def load_json(file_path: str):
+    """Loads geojson data from a file."""
+    with open(file_path, "r") as file:
+        json_parsed = json.load(file)
+    return json_parsed
 
 
 def insert_data(conn, data):
@@ -96,14 +184,111 @@ def insert_data(conn, data):
             print("Data inserted successfully.")
 
 
+def insert_dopravni_nehody_data(conn, data):
+    """Inserts parsed geojson data into the table."""
+    
+    # Connect to the PostgreSQL database
+    cur = conn.cursor()
+    for json_data in data["features"]:
+
+        # Extracting values from JSON
+        geom = json_data["geometry"]
+        lon, lat = geom["coordinates"]  # Extract coordinates
+
+        properties = json_data["properties"]
+
+        # Convert date format
+        datum = datetime.strptime(properties["datum"], "%a, %d %b %Y %H:%M:%S GMT") if properties["datum"] else None
+
+        # SQL INSERT statement
+        sql = """
+        INSERT INTO dopravni_nehody (
+            objectid_1, zuj, alkohol_vinik, hlavni_pricina, srazka, nasledky, pricina, stav_vozovky,
+            povetrnostni_podm, rozhled, misto_nehody, druh_komun, pneumatiky, druh_pohonu, druh_vozidla,
+            mestska_cast, pohlavi, alkohol, den_v_tydnu, mesic_t, katastr, nasledek, ozn_osoba, zavineni,
+            viditelnost, situovani, osoba, stav_ridic, doba, lz, den, vek, rok_nar, rok, tz, smrt, lehce_zran_os,
+            tezce_zran_os, usmrceno_os, id_vozidla, hodina, ovlivneni_ridice, cas, mesic, e, d, id_nehody, datum,
+            hmotna_skoda_1, skoda_vozidlo, globalid, geometry
+        )
+        VALUES %s
+        """
+
+        values = (
+            properties["OBJECTID_1"],
+            properties["zuj"],
+            properties["alkohol_vinik"],
+            properties["hlavni_pricina"],
+            properties["srazka"],
+            properties["nasledky"],
+            properties["pricina"],
+            properties["stav_vozovky"],
+            properties["povetrnostni_podm"],
+            properties["rozhled"],
+            properties["misto_nehody"],
+            properties["druh_komun"],
+            properties["pneumatiky"],
+            properties["druh_pohonu"],
+            properties["druh_vozidla"],
+            properties["mestska_cast"],
+            properties["pohlavi"],
+            properties["alkohol"],
+            properties["den_v_tydnu"],
+            properties["mesic_t"],
+            properties["katastr"],
+            properties["nasledek"],
+            properties["ozn_osoba"],
+            properties["zavineni"],
+            properties["viditelnost"],
+            properties["situovani"],
+            properties["osoba"],
+            properties["stav_ridic"],
+            properties["doba"],
+            properties["lz"],
+            properties["den"],
+            properties["vek"],
+            properties["rok_nar"],
+            properties["rok"],
+            properties["tz"],
+            properties["smrt"],
+            properties["lehce_zran_os"],
+            properties["tezce_zran_os"],
+            properties["usmrceno_os"],
+            properties["id_vozidla"],
+            properties["hodina"],
+            properties["ovlivneni_ridice"],
+            properties["cas"],
+            properties["mesic"],
+            properties["e"],
+            properties["d"],
+            properties["id_nehody"],
+            datum,
+            properties["hmotna_skoda_1"],
+            properties["skoda_vozidlo"],
+            properties["GlobalID"],
+            f"SRID=4326;POINT({lon} {lat})",  # PostGIS geometry format
+        )
+
+        # Execute the query
+        execute_values(cur, sql, [values])
+
+    # Commit and close
+    conn.commit()
+    cur.close()
+    conn.close()
+    print("Data successfully inserted into dopravni_nehody.")
+
+
 def main():
     """Main function to handle database connection and data processing."""
     conn = psycopg2.connect(**DB_PARAMS)
 
     try:
         # create_table(conn)
-        data = load_geojson("/home/mkoo7mk/Downloads/Telegram Desktop/intenzita_dopravy_pentlogramy_-2087072355465349330.geojson")
-        insert_data(conn, data)
+        # data = load_geojson("/home/mkoo7mk/Downloads/Telegram Desktop/intenzita_dopravy_pentlogramy_-2087072355465349330.geojson")
+        # insert_data(conn, data)
+        create_dopravni_nehody_table(conn)
+        data = load_json("/home/mkoo7mk/Downloads/Telegram Desktop/dopravni_nehody_4922215206159905331.geojson")
+        insert_dopravni_nehody_data(conn, data)
     finally:
         conn.close()
 
