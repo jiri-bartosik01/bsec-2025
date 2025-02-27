@@ -4,12 +4,30 @@ import MapView from "./MapView.vue";
 import PlaceView from "./PlaceView.vue";
 
 const showFilter = ref(false);
+const showPlaceView = ref(false);
+const focusedPlace = ref({"lat": 0, "lng": 0});
+
+const toggleFilterVisibility = () => {
+    if (!showPlaceView.value) {
+        showFilter.value = !showFilter.value;
+    }
+};
+
+const togglePlaceViewVisibility = () => {
+    showPlaceView.value = !showPlaceView.value;
+};
+
+const handleMapClicked = (event) => {
+    console.log("Map clicked at: ", event.lngLat);
+    focusedPlace.value = event.lngLat;
+    showPlaceView.value = true;
+};
 </script>
 
 <template>
     <div class="relative w-screen h-screen">
         <!-- The Map MUST be before UI elements so it renders below -->
-        <MapView />
+        <MapView @MapClicked="handleMapClicked"/>
 
         <!-- Floating Pill Navbar with 90% width -->
         <div
@@ -34,7 +52,7 @@ const showFilter = ref(false);
             <div class="flex-1 text-center text-lg font-semibold">Mapa nehod</div>
 
             <!-- Right Filter Button -->
-            <button @click="showFilter = !showFilter" class="btn btn-ghost btn-circle">
+            <button @click="toggleFilterVisibility" class="btn btn-ghost btn-circle">
                 <svg width="30px" height="30px" viewBox="0 0 1024 1024" class="icon"
                      xmlns="http://www.w3.org/2000/svg" fill="#000000">
                     <path fill="#000000"
@@ -63,10 +81,10 @@ const showFilter = ref(false);
             </div>
         </div>
 
-        <div sty
+        <div v-show="showPlaceView" class="fixed inset-0 backdrop-blur-md bg-opacity-30 z-20 w-screen h-screen"></div>
 
         <!-- Details Modal -->
-        <PlaceView/>
+        <PlaceView v-if="showPlaceView" @close="togglePlaceViewVisibility" class="z-30" :place="focusedPlace"/>
 
     </div>
 </template>
