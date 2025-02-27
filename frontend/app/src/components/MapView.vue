@@ -6,12 +6,21 @@
 import {onMounted, ref} from "vue";
 import maplibregl from "maplibre-gl";
 
-const emit = defineEmits(['MapClicked']);
+const emit = defineEmits(['MapClicked', 'mapDataLoaded', 'mapDataLoading']);
 const mapContainer = ref(null);
 let map;
 
+const fetchCentroids = async () => {
+    emit('mapDataLoading');
+    const url = 'http://10.147.19.154:8000/points';
+    const response = await fetch(url);
+    const data = await response.json();
+    console.log(data);
+    emit('mapDataLoaded');
+};
 
 const switchMapSource = (source) => {
+
     const newSource = source === 'basic' ? 'basic-tiles' : 'aerial-tiles';
     map.setStyle({
         version: 8,
@@ -35,6 +44,8 @@ defineExpose({
 });
 
 onMounted(() => {
+   fetchCentroids();
+
     const API_KEY = "D1D_iVhi-pbGrWFW80ijlZmC_HRQzZaUa59gV-7ZaXo";
      map = new maplibregl.Map({
         container: mapContainer.value, // Use the ref value here

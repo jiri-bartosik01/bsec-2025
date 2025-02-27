@@ -7,6 +7,7 @@ const showFilter = ref(false);
 const showPlaceView = ref(false);
 const focusedPlace = ref({"lat": 0, "lng": 0});
 const mapViewRef = ref(null);
+const isLoading = ref(true);
 
 const toggleFilterVisibility = () => {
     if (!showPlaceView.value) {
@@ -36,7 +37,7 @@ const switchToAerialMap = () => {
 <template>
     <div class="relative w-screen h-screen">
         <!-- The Map MUST be before UI elements so it renders below -->
-        <MapView ref="mapViewRef" @MapClicked="handleMapClicked"/>
+        <MapView ref="mapViewRef" @MapClicked="handleMapClicked" @mapDataLoaded="isLoading = false" @mapDataLoading="isLoading = true"/>
 
         <!-- Floating Pill Navbar with 90% width -->
         <div
@@ -53,16 +54,15 @@ const switchToAerialMap = () => {
             </div>
 
             <!-- Title -->
-            <div class="flex-1 text-center text-lg font-semibold">Mapa nehod</div>
+            <div class="flex-1 text-center text-xl font-semibold">Riziková místa v Brně a okolí</div>
 
             <!-- Right Filter Button -->
-            <button @click="toggleFilterVisibility" class="btn btn-ghost btn-circle">
-                <svg width="30px" height="30px" viewBox="0 0 1024 1024" class="icon"
-                     xmlns="http://www.w3.org/2000/svg" fill="#000000">
-                    <path fill="#000000"
-                          d="M384 523.392V928a32 32 0 0046.336 28.608l192-96A32 32 0 00640 832V523.392l280.768-343.104a32 32 0 10-49.536-40.576l-288 352A32 32 0 00576 512v300.224l-128 64V512a32 32 0 00-7.232-20.288L195.52 192H704a32 32 0 100-64H128a32 32 0 00-24.768 52.288L384 523.392z"></path>
-                </svg>
-            </button>
+            <div>
+                <span class="loading loading-ring loading-lg mr-1" v-if="isLoading"></span>
+                <div v-else>
+                    <svg width="36px" height="36px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M8.5 12.5L10.5 14.5L15.5 9.5" stroke="#1C274C" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"></path> <path d="M7 3.33782C8.47087 2.48697 10.1786 2 12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 10.1786 2.48697 8.47087 3.33782 7" stroke="#1C274C" stroke-width="1.2" stroke-linecap="round"></path> </g></svg>
+                </div>
+            </div>
         </div>
 
         <!-- Floating Filter UI -->
@@ -86,7 +86,7 @@ const switchToAerialMap = () => {
         <div v-show="showPlaceView" class="fixed inset-0 backdrop-blur-md bg-opacity-30 z-20 w-screen h-screen"></div>
 
         <!-- Details Modal -->
-        <PlaceView v-if="showPlaceView" @close="togglePlaceViewVisibility" class="z-30" :place="focusedPlace"/>
+        <PlaceView v-if="showPlaceView" @close="togglePlaceViewVisibility" class="z-30 shadow-lg" :place="focusedPlace"/>
 
     </div>
 </template>
