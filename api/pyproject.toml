@@ -1,0 +1,45 @@
+[project]
+name = "bsec-2025-api"
+version = "0.0.1"
+description = "BSEC Analyze.it API"
+authors = [
+    {name = "Martin Kmeť", email = "martin.kmet@email.cz"},
+    ]
+
+maintainers = [
+    {name = "Martin Kmeť", email = "martin.kmet@email.cz"},
+]
+
+readme = "README.md"
+requires-python = ">=3.12"
+
+dynamic = ["dependencies"]
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
+
+[project.urls]
+Repository = "https://github.com/jiri-bartosik01/bsec-2025"
+
+
+[tool.ruff]
+line-length = 120
+fix = true
+indent-width = 4
+target-version = "py312"
+exclude = ["doc"]
+
+[tool.ruff.lint]
+ignore = ["F403", "E501", "PLR0913", "PLR0915"]
+select = ["E4", "E7", "E9", "F", "B", "Q", "E", "W", "I", "FAST", "PL", "TID", "TC", "PLW"]
+
+fixable = ["ALL"]
+unfixable = []
+
+
+exclude = ["doc"]
+
+[tool.ruff.format]
+docstring-code-format = true
+docstring-code-line-length = 120
+line-ending = "lf"
