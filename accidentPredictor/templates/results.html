@@ -583,7 +583,6 @@
                 </div>
 
                 <div class="risk-gauge-container mb-4">
-                    <img src="/static/gauge.png" alt="Risk Gauge" class="risk-gauge" id="riskGauge">
                     <div class="risk-needle" id="riskNeedle"></div>
                     <div class="risk-value pulse" id="riskValue">{{ risk.risk_score }}%</div>
                 </div>
@@ -729,17 +728,7 @@
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         // Initialize map
-        const map = L.map('map').setView([{{lat}
-    },
-        {
-            {
-                lng
-            }
-        }
-    ],
-        13
-    )
-        ;
+        const map = L.map('map').setView([{{ lat }}, {{ lng }}], 13);
 
         // Add the base tile layer (OpenStreetMap)
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -747,25 +736,12 @@
         }).addTo(map);
 
         // Add a marker for the selected location
-        const marker = L.marker([{{lat}
-    },
-        {
-            {
-                lng
-            }
-        }
-    ]).
-        addTo(map);
+        const marker = L.marker([{{ lat }}, {{ lng }}]).addTo(map);
         marker.bindPopup('<strong>Vybrané místo</strong>').openPopup();
 
         // Animate the risk needle
         setTimeout(() => {
-            const riskScore = {
-            {
-                risk.risk_score
-            }
-        }
-            ;
+            const riskScore = {{ risk.risk_score }};
             const riskNeedle = document.getElementById('riskNeedle');
             const rotation = -90 + (riskScore * 1.8); // Convert 0-100 to -90 to 90 degrees
             riskNeedle.style.transform = `rotate(${rotation}deg)`;
@@ -774,72 +750,46 @@
         // Animate progress bars
         setTimeout(() => {
             const locationFactor = document.getElementById('locationFactor');
-            const locationValue = {
-            {
-                risk.detailed_factors.location_risk
-            }
-        }
-            ;
+            const locationValue = {{ risk.detailed_factors.location_risk }};
             locationFactor.style.width = `${(locationValue / 50) * 100}%`;
 
             const timeFactor = document.getElementById('timeFactor');
-            const timeValue = {
-            {
-                risk.detailed_factors.time_risk
-            }
-        }
-            ;
+            const timeValue = {{ risk.detailed_factors.time_risk }};
             timeFactor.style.width = `${(timeValue / 15) * 100}%`;
 
             const weatherFactor = document.getElementById('weatherFactor');
-            const weatherValue = {
-            {
-                risk.detailed_factors.weather_risk
-            }
-        }
-            ;
+            const weatherValue = {{ risk.detailed_factors.weather_risk }};
             weatherFactor.style.width = `${(weatherValue / 35) * 100}%`;
 
-            {%
-                if risk.detailed_factors.model_prediction is
-                not
-                none %
-            }
+            {% if risk.detailed_factors.model_prediction is not none %}
             const modelFactor = document.getElementById('modelFactor');
-            const modelValue = {
-            {
-                risk.detailed_factors.model_prediction
-            }
-        }
-            ;
+            const modelValue = {{ risk.detailed_factors.model_prediction }};
             modelFactor.style.width = `${modelValue}%`;
-            {%
-                endif %
-            }
+            {% endif %}
         }, 800);
 
         // Get accident hotspots
         fetch('/api/hotspots')
-                .then(response => response.json())
-                .then(data => {
-                    // Add accident markers
-                    if (data.features && data.features.length > 0) {
-                        data.features.forEach(feature => {
-                            const coords = feature.geometry.coordinates;
-                            const circle = L.circle([coords[1], coords[0]], {
-                                color: 'rgba(231, 76, 60, 0.8)',
-                                fillColor: 'rgba(231, 76, 60, 0.5)',
-                                fillOpacity: 0.5,
-                                radius: 50
-                            }).addTo(map);
+            .then(response => response.json())
+            .then(data => {
+                // Add accident markers
+                if (data.features && data.features.length > 0) {
+                    data.features.forEach(feature => {
+                        const coords = feature.geometry.coordinates;
+                        const circle = L.circle([coords[1], coords[0]], {
+                            color: 'rgba(231, 76, 60, 0.8)',
+                            fillColor: 'rgba(231, 76, 60, 0.5)',
+                            fillOpacity: 0.5,
+                            radius: 50
+                        }).addTo(map);
 
-                            circle.bindTooltip('Místo nehody', {
-                                className: 'custom-tooltip'
-                            });
+                        circle.bindTooltip('Místo nehody', {
+                            className: 'custom-tooltip'
                         });
-                    }
-                })
-                .catch(error => console.error('Error loading hotspots:', error));
+                    });
+                }
+            })
+            .catch(error => console.error('Error loading hotspots:', error));
 
         // Create risk factor chart
         const ctx = document.getElementById('factorChart').getContext('2d');
@@ -850,87 +800,43 @@
                 datasets: [{
                     label: 'Riziko (%)',
                     data: [
-                        {{(risk.detailed_factors.location_risk / 50) * 100
-                }
+                        {{ (risk.detailed_factors.location_risk / 50) * 100 }},
+                        {{ (risk.detailed_factors.weather_risk / 35) * 100 }},
+                        {{ (risk.detailed_factors.time_risk / 15) * 100 }},
+                        {% if risk.detailed_factors.model_prediction is not none %}
+                        {{ risk.detailed_factors.model_prediction }}
+                        {% else %}
+                        0
+                        {% endif %}
+                    ],
+                    backgroundColor: 'rgba(52, 152, 219, 0.2)',
+                    borderColor: 'rgba(52, 152, 219, 1)',
+                    borderWidth: 2,
+                    pointBackgroundColor: 'rgba(52, 152, 219, 1)',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: 'rgba(52, 152, 219, 1)'
+                }]
             },
-        {
-            {
-                (risk.detailed_factors.weather_risk / 35) * 100
-            }
-        }
-    ,
-        {
-            {
-                (risk.detailed_factors.time_risk / 15) * 100
-            }
-        }
-    ,
-        {%
-            if risk.detailed_factors.model_prediction is
-            not
-            none %
-        }
-        {
-            {
-                risk.detailed_factors.model_prediction
-            }
-        }
-        {% else %
-        }
-        0
-        {%
-            endif %
-        }
-    ],
-        backgroundColor: 'rgba(52, 152, 219, 0.2)',
-                borderColor
-    :
-        'rgba(52, 152, 219, 1)',
-                borderWidth
-    :
-        2,
-                pointBackgroundColor
-    :
-        'rgba(52, 152, 219, 1)',
-                pointBorderColor
-    :
-        '#fff',
-                pointHoverBackgroundColor
-    :
-        '#fff',
-                pointHoverBorderColor
-    :
-        'rgba(52, 152, 219, 1)'
-    }]
-    },
-        options: {
-            responsive: true,
-                    maintainAspectRatio
-        :
-            false,
-                    elements
-        :
-            {
-                line: {
-                    tension: 0.1
-                }
-            }
-        ,
-            scales: {
-                r: {
-                    angleLines: {
-                        display: true
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                elements: {
+                    line: {
+                        tension: 0.1
                     }
-                ,
-                    suggestedMin: 0,
-                            suggestedMax
-                :
-                    100
+                },
+                scales: {
+                    r: {
+                        angleLines: {
+                            display: true
+                        },
+                        suggestedMin: 0,
+                        suggestedMax: 100
+                    }
                 }
             }
-        }
-    })
-        ;
+        });
     });
 </script>
 </body>

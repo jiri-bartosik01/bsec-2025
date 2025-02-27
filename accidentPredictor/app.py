@@ -21,7 +21,7 @@ app = Flask(__name__)
 app.secret_key = 'traffic_safety_advanced_predictor_key'
 
 # OpenWeatherMap API key - replace with your actual key
-OPENWEATHER_API_KEY = "YOUR_API_KEY"  # Replace with your OpenWeatherMap API key
+OPENWEATHER_API_KEY = "8dad3db309e50de33c8cdefbe69cec74"  # Replace with your OpenWeatherMap API key
 
 # Global variables for models and data
 accident_model = None
