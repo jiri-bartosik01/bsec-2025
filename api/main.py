@@ -2,10 +2,11 @@ import importlib
 import os
 
 import toml
-from api.app.services.middleware import OptionsMiddleware
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
+
+from app.services.middleware import OptionsMiddleware
 
 app = FastAPI()
 
