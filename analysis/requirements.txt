@@ -8,3 +8,6 @@ geopandas
 contextily
 openpyxl
 seaborn
+xyzservices
+ace_tools
+scipy
